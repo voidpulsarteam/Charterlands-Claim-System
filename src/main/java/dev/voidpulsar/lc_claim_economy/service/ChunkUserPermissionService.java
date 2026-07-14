@@ -25,6 +25,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class ChunkUserPermissionService {
+    private static final String ALL_PLAYERS_REF = "*";
+
     private ChunkUserPermissionService() {
     }
 
@@ -55,7 +57,16 @@ public final class ChunkUserPermissionService {
 
         LcClaimEconomySavedData data = LcClaimEconomySavedData.get(server);
         Map<UUID, Integer> map = data.getChunkUserPermissions(ownerTeam.getTeamId(), normalizedKey);
-        List<ChunkUserPermissionEntry> entries = new ArrayList<>(map.size());
+        List<ChunkUserPermissionEntry> entries = new ArrayList<>(map.size() + 1);
+
+        int allFlags = ChunkPermissionFlags.sanitize(data.getChunkAllPlayerPermissionFlags(ownerTeam.getTeamId(), normalizedKey));
+        entries.add(new ChunkUserPermissionEntry(
+            new UUID(0L, 0L),
+            "All Players",
+            allFlags,
+            true
+        ));
+
         for (Map.Entry<UUID, Integer> entry : map.entrySet()) {
             int flags = ChunkPermissionFlags.sanitize(entry.getValue() == null ? 0 : entry.getValue());
             if (flags <= 0) {
@@ -64,7 +75,8 @@ public final class ChunkUserPermissionService {
             entries.add(new ChunkUserPermissionEntry(
                     entry.getKey(),
                     resolvePlayerName(server, entry.getKey()),
-                    flags
+                flags,
+                false
             ));
         }
         entries.sort(Comparator.comparing(ChunkUserPermissionEntry::displayName, String.CASE_INSENSITIVE_ORDER));
@@ -108,6 +120,24 @@ public final class ChunkUserPermissionService {
         int sanitized = ChunkPermissionFlags.sanitize(flags);
 
         LcClaimEconomySavedData data = LcClaimEconomySavedData.get(server);
+
+        if (ALL_PLAYERS_REF.equals(playerRef)) {
+            boolean changed = data.setChunkAllPlayerPermissionFlags(ownerTeam.getTeamId(), normalizedKey, sanitized);
+            if (!changed) {
+                syncToPlayer(actor, normalizedKey);
+                return;
+            }
+
+            if (sanitized <= 0) {
+                actor.displayClientMessage(Component.translatable("message.lc_claim_economy.chunk_user_perm_all_removed"), false);
+            } else {
+                actor.displayClientMessage(Component.translatable("message.lc_claim_economy.chunk_user_perm_all_updated"), false);
+            }
+
+            syncToPlayer(actor, normalizedKey);
+            return;
+        }
+
         boolean changed = data.setChunkUserPermissionFlags(ownerTeam.getTeamId(), normalizedKey, target.get(), sanitized);
         if (!changed) {
             syncToPlayer(actor, normalizedKey);
@@ -140,7 +170,9 @@ public final class ChunkUserPermissionService {
 
         MinecraftServer server = player.server;
         String key = ChunkPosKey.encode(chunk.getPos());
-        int flags = LcClaimEconomySavedData.get(server).getChunkUserPermissionFlags(team.getTeamId(), key, player.getUUID());
+        LcClaimEconomySavedData data = LcClaimEconomySavedData.get(server);
+        int flags = data.getChunkUserPermissionFlags(team.getTeamId(), key, player.getUUID())
+            | data.getChunkAllPlayerPermissionFlags(team.getTeamId(), key);
         return (ChunkPermissionFlags.sanitize(flags) & required) != 0;
     }
 

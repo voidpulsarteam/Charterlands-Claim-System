@@ -276,7 +276,9 @@ public class ChunkUserPermissionsScreen extends BaseScreen {
             add(new ToggleFlagButton(this, entry, ChunkPermissionFlags.BLOCK_INTERACT, "I"));
             add(new ToggleFlagButton(this, entry, ChunkPermissionFlags.ENTITY_INTERACT, "E"));
             add(new ToggleFlagButton(this, entry, ChunkPermissionFlags.PVP, "P"));
-            add(new RemovePlayerButton(this, entry));
+            if (!entry.allPlayers()) {
+                add(new RemovePlayerButton(this, entry));
+            }
         }
 
         @Override
@@ -291,8 +293,15 @@ public class ChunkUserPermissionsScreen extends BaseScreen {
         @Override
         public void drawBackground(GuiGraphics graphics, Theme theme, int x, int y, int w, int h) {
             NordColors.POLAR_NIGHT_2.withAlpha(isMouseOver() ? 220 : 180).draw(graphics, x, y, w, h);
-            theme.drawString(graphics, Component.literal(entry.displayName()), x + 6, y + 4, NordColors.SNOW_STORM_0, 0);
-            theme.drawString(graphics, Component.literal(entry.playerId().toString()), x + 6, y + 13, NordColors.SNOW_STORM_1.withAlpha(180), 0);
+            Component name = entry.allPlayers()
+                    ? Component.translatable("gui.lc_claim_economy.chunk_user_perm.all_players_label").withStyle(ChatFormatting.BOLD)
+                    : Component.literal(entry.displayName());
+            theme.drawString(graphics, name, x + 6, y + 4, NordColors.SNOW_STORM_0, 0);
+            if (!entry.allPlayers()) {
+                theme.drawString(graphics, Component.literal(entry.playerId().toString()), x + 6, y + 13, NordColors.SNOW_STORM_1.withAlpha(180), 0);
+            } else {
+                theme.drawString(graphics, Component.translatable("gui.lc_claim_economy.chunk_user_perm.all_players_hint"), x + 6, y + 13, NordColors.SNOW_STORM_1.withAlpha(180), 0);
+            }
         }
     }
 
@@ -318,7 +327,8 @@ public class ChunkUserPermissionsScreen extends BaseScreen {
             } else {
                 next |= flag;
             }
-            PacketDistributor.sendToServer(new SetChunkUserPermsPayload(screen.chunkKey, entry.playerId().toString(), next));
+            String playerRef = entry.allPlayers() ? "*" : entry.playerId().toString();
+            PacketDistributor.sendToServer(new SetChunkUserPermsPayload(screen.chunkKey, playerRef, next));
         }
 
         @Override

@@ -23,6 +23,24 @@ Every claimed chunk is either a **Build chunk** or a **Land chunk**.
 | **Upkeep billing** | Per chunk | Per group of N chunks (cheaper for large territories) |
 | **Switch** | Alt + click/drag in the FTB Chunks map | Same |
 
+### Per-Chunk Player Permissions (FTB Chunks)
+Each claimed chunk can now define **player-specific access** using the same protection categories as team protections:
+
+- Block edit
+- Block interact
+- Entity interact
+- PvP/attack
+
+This system has **no extra cost** and does not affect upkeep pricing. It is a pure permission-management feature.
+
+You can also set an **All Players (Base)** profile per chunk to define default permissions for non-team players, then add specific players as overrides.
+
+Permission evaluation is additive:
+
+`effective_allow = all_players_base + specific_player_flags`
+
+Only team owners/officers can edit these permissions.
+
 ### Team Bank Accounts
 When an FTB party is created, Lightman's Currency: FTB Claim Economy automatically creates a linked Lightman's Currency bank account for it. The account mirrors the team hierarchy at all times:
 
@@ -68,6 +86,7 @@ Enabling force-load on a chunk is free, but each force-loaded chunk adds a perio
 - **Claim prices** and your current balance are displayed directly in the FTB Chunks map UI.
 - **Protection prices** are shown next to each toggle in the FTB Teams config screen.
 - **Pending state indicators** show queued changes (e.g. "→ Ally pending").
+- **Chunk Player Permissions screen** is available from the claim map per chunk.
 
 ---
 
@@ -155,6 +174,17 @@ By default all claimed chunks are **Build chunks**. To mark some as **Land chunk
 
 Land chunks use separate block interact and block edit protection settings, visible in the FTB Teams config under *"Land Chunk Protection"*.
 
+### Step 3.5 — Configure per-player permissions per chunk (optional)
+Open the FTB Chunks map and use **Shift + middle-click** on one of your claimed chunks to open **Chunk Player Permissions**.
+
+In this screen you can:
+
+- Set **All Players (Base)** permissions for that chunk.
+- Add specific players by name or UUID.
+- Toggle B / I / E / P permissions per player.
+
+This applies only to that exact chunk and does not change team-wide protection settings.
+
 ### Step 4 — Enable protections
 Open your FTB Teams settings and navigate to the protection properties. Each protection shows its per-chunk price next to the toggle. Enable protections you want to pay for. If your balance is too low to afford the new upkeep, the change is blocked and reverted.
 
@@ -211,6 +241,9 @@ A: Your team's bank account did not have enough balance to pay upkeep. Top up th
 
 **Q: Can members claim chunks?**  
 A: No. Only team owners and officers can claim, unclaim, or force-load chunks on behalf of the team.
+
+**Q: Can I grant one non-member access to only one chunk?**  
+A: Yes. Open that chunk's player permissions screen and add the player there. You can also set a base rule for **All Players** on that single chunk.
 
 **Q: What happens when my party disbands?**  
 A: All claimed chunks are unclaimed (with the configured refund), the remaining balance in the team account is distributed to members, and the team account is deleted.

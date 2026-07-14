@@ -17,7 +17,8 @@ public final class ClientChunkUserPermissions {
         activeChunkKey = chunkKey == null ? "" : chunkKey;
         canManage = manage;
         entries = list.stream()
-                .sorted(Comparator.comparing(ChunkUserPermissionEntry::displayName, String.CASE_INSENSITIVE_ORDER))
+            .sorted(Comparator.comparing(ChunkUserPermissionEntry::allPlayers).reversed()
+                .thenComparing(ChunkUserPermissionEntry::displayName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 

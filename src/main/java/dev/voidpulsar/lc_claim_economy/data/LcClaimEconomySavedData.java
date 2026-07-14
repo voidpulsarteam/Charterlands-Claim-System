@@ -58,26 +58,35 @@ public class LcClaimEconomySavedData extends SavedData {
                 }
             }
             Map<String, Map<UUID, Integer>> chunkUserPermissions = new HashMap<>();
+            Map<String, Integer> chunkAllPlayerPermissions = new HashMap<>();
             if (entryTag.contains("ChunkUserPermissions", Tag.TAG_LIST)) {
                 ListTag chunks = entryTag.getList("ChunkUserPermissions", Tag.TAG_COMPOUND);
                 for (int j = 0; j < chunks.size(); j++) {
                     CompoundTag chunkEntry = chunks.getCompound(j);
                     String chunkKey = chunkEntry.getString("ChunkKey");
-                    if (chunkKey.isEmpty() || !chunkEntry.contains("Players", Tag.TAG_LIST)) {
+                    if (chunkKey.isEmpty()) {
                         continue;
                     }
-                    ListTag players = chunkEntry.getList("Players", Tag.TAG_COMPOUND);
+
+                    int allFlags = chunkEntry.contains("AllFlags", Tag.TAG_INT) ? chunkEntry.getInt("AllFlags") : 0;
+                    if (allFlags > 0) {
+                        chunkAllPlayerPermissions.put(chunkKey, allFlags);
+                    }
+
                     Map<UUID, Integer> perPlayer = new HashMap<>();
-                    for (int k = 0; k < players.size(); k++) {
-                        CompoundTag playerEntry = players.getCompound(k);
-                        if (!playerEntry.hasUUID("PlayerId")) {
-                            continue;
+                    if (chunkEntry.contains("Players", Tag.TAG_LIST)) {
+                        ListTag players = chunkEntry.getList("Players", Tag.TAG_COMPOUND);
+                        for (int k = 0; k < players.size(); k++) {
+                            CompoundTag playerEntry = players.getCompound(k);
+                            if (!playerEntry.hasUUID("PlayerId")) {
+                                continue;
+                            }
+                            int flags = playerEntry.getInt("Flags");
+                            if (flags <= 0) {
+                                continue;
+                            }
+                            perPlayer.put(playerEntry.getUUID("PlayerId"), flags);
                         }
-                        int flags = playerEntry.getInt("Flags");
-                        if (flags <= 0) {
-                            continue;
-                        }
-                        perPlayer.put(playerEntry.getUUID("PlayerId"), flags);
                     }
                     if (!perPlayer.isEmpty()) {
                         chunkUserPermissions.put(chunkKey, Map.copyOf(perPlayer));
@@ -92,7 +101,8 @@ public class LcClaimEconomySavedData extends SavedData {
                     pending,
                     landChunks,
                     warTargets,
-                    Map.copyOf(chunkUserPermissions)
+                    Map.copyOf(chunkUserPermissions),
+                    Map.copyOf(chunkAllPlayerPermissions)
             ));
         }
         return data;
@@ -197,27 +207,34 @@ public class LcClaimEconomySavedData extends SavedData {
                 entry.warTargets().forEach(id -> warList.add(net.minecraft.nbt.NbtUtils.createUUID(id)));
                 entryTag.put("WarTargets", warList);
             }
-            if (!entry.chunkUserPermissions().isEmpty()) {
+            if (!entry.chunkUserPermissions().isEmpty() || !entry.chunkAllPlayerPermissions().isEmpty()) {
+                Set<String> chunkKeys = new HashSet<>(entry.chunkUserPermissions().keySet());
+                chunkKeys.addAll(entry.chunkAllPlayerPermissions().keySet());
                 ListTag chunkList = new ListTag();
-                for (Map.Entry<String, Map<UUID, Integer>> chunkEntry : entry.chunkUserPermissions().entrySet()) {
-                    if (chunkEntry.getValue().isEmpty()) {
-                        continue;
-                    }
+                for (String chunkKey : chunkKeys) {
                     CompoundTag chunkTag = new CompoundTag();
-                    chunkTag.putString("ChunkKey", chunkEntry.getKey());
+                    chunkTag.putString("ChunkKey", chunkKey);
+
+                    int allFlags = entry.chunkAllPlayerPermissions().getOrDefault(chunkKey, 0);
+                    if (allFlags > 0) {
+                        chunkTag.putInt("AllFlags", allFlags);
+                    }
+
                     ListTag players = new ListTag();
-                    for (Map.Entry<UUID, Integer> playerEntry : chunkEntry.getValue().entrySet()) {
-                        int flags = playerEntry.getValue() == null ? 0 : playerEntry.getValue();
-                        if (flags <= 0) {
-                            continue;
-                        }
-                        CompoundTag playerTag = new CompoundTag();
-                        playerTag.putUUID("PlayerId", playerEntry.getKey());
-                        playerTag.putInt("Flags", flags);
-                        players.add(playerTag);
+                    for (Map.Entry<UUID, Integer> playerEntry : entry.chunkUserPermissions().getOrDefault(chunkKey, Map.of()).entrySet()) {
+                            int flags = playerEntry.getValue() == null ? 0 : playerEntry.getValue();
+                            if (flags <= 0) {
+                                continue;
+                            }
+                            CompoundTag playerTag = new CompoundTag();
+                            playerTag.putUUID("PlayerId", playerEntry.getKey());
+                            playerTag.putInt("Flags", flags);
+                            players.add(playerTag);
                     }
                     if (!players.isEmpty()) {
                         chunkTag.put("Players", players);
+                    }
+                    if (allFlags > 0 || !players.isEmpty()) {
                         chunkList.add(chunkTag);
                     }
                 }
@@ -272,7 +289,7 @@ public class LcClaimEconomySavedData extends SavedData {
     public TeamLinkEntry getOrCreateLink(UUID ftbTeamId) {
         return teamLinks.computeIfAbsent(ftbTeamId, id -> {
             setDirty();
-            return new TeamLinkEntry(id, -1L, null, false, new TeamPendingState(), Set.of(), Set.of(), Map.of());
+            return new TeamLinkEntry(id, -1L, null, false, new TeamPendingState(), Set.of(), Set.of(), Map.of(), Map.of());
         });
     }
 
@@ -358,7 +375,7 @@ public class LcClaimEconomySavedData extends SavedData {
             teamLinks.put(teamId, entry.withProtectionLocked(locked));
             setDirty();
         } else if (entry == null && locked) {
-            teamLinks.put(teamId, new TeamLinkEntry(teamId, -1L, null, true, new TeamPendingState(), Set.of(), Set.of(), Map.of()));
+            teamLinks.put(teamId, new TeamLinkEntry(teamId, -1L, null, true, new TeamPendingState(), Set.of(), Set.of(), Map.of(), Map.of()));
             setDirty();
         }
     }
@@ -422,6 +439,15 @@ public class LcClaimEconomySavedData extends SavedData {
         return flags == null ? 0 : flags;
     }
 
+    public int getChunkAllPlayerPermissionFlags(UUID teamId, String chunkKey) {
+        TeamLinkEntry entry = teamLinks.get(teamId);
+        if (entry == null) {
+            return 0;
+        }
+        Integer flags = entry.chunkAllPlayerPermissions().get(chunkKey);
+        return flags == null ? 0 : flags;
+    }
+
     public boolean setChunkUserPermissionFlags(UUID teamId, String chunkKey, UUID playerId, int flags) {
         TeamLinkEntry entry = getOrCreateLink(teamId);
         Map<String, Map<UUID, Integer>> updatedChunks = new HashMap<>(entry.chunkUserPermissions());
@@ -450,13 +476,35 @@ public class LcClaimEconomySavedData extends SavedData {
         return true;
     }
 
+    public boolean setChunkAllPlayerPermissionFlags(UUID teamId, String chunkKey, int flags) {
+        TeamLinkEntry entry = getOrCreateLink(teamId);
+        Map<String, Integer> updated = new HashMap<>(entry.chunkAllPlayerPermissions());
+
+        if (flags <= 0) {
+            if (updated.remove(chunkKey) == null) {
+                return false;
+            }
+        } else {
+            Integer previous = updated.put(chunkKey, flags);
+            if (previous != null && previous == flags) {
+                return false;
+            }
+        }
+
+        teamLinks.put(teamId, entry.withChunkAllPlayerPermissions(Map.copyOf(updated)));
+        setDirty();
+        return true;
+    }
+
     public boolean clearChunkUserPermissions(String chunkKey) {
         boolean changed = false;
         for (TeamLinkEntry entry : java.util.List.copyOf(teamLinks.values())) {
-            if (entry.chunkUserPermissions().containsKey(chunkKey)) {
+            if (entry.chunkUserPermissions().containsKey(chunkKey) || entry.chunkAllPlayerPermissions().containsKey(chunkKey)) {
                 Map<String, Map<UUID, Integer>> updated = new HashMap<>(entry.chunkUserPermissions());
                 updated.remove(chunkKey);
-                teamLinks.put(entry.ftbTeamId(), entry.withChunkUserPermissions(Map.copyOf(updated)));
+                Map<String, Integer> updatedAll = new HashMap<>(entry.chunkAllPlayerPermissions());
+                updatedAll.remove(chunkKey);
+                teamLinks.put(entry.ftbTeamId(), entry.withChunkUserPermissions(Map.copyOf(updated)).withChunkAllPlayerPermissions(Map.copyOf(updatedAll)));
                 changed = true;
             }
         }
@@ -582,34 +630,39 @@ public class LcClaimEconomySavedData extends SavedData {
             TeamPendingState pendingState,
             Set<String> landChunks,
             Set<UUID> warTargets,
-            Map<String, Map<UUID, Integer>> chunkUserPermissions
+            Map<String, Map<UUID, Integer>> chunkUserPermissions,
+            Map<String, Integer> chunkAllPlayerPermissions
     ) {
         TeamLinkEntry withLcTeamId(long id) {
-            return new TeamLinkEntry(ftbTeamId, id, legacyAccount, protectionLocked, pendingState, landChunks, warTargets, chunkUserPermissions);
+            return new TeamLinkEntry(ftbTeamId, id, legacyAccount, protectionLocked, pendingState, landChunks, warTargets, chunkUserPermissions, chunkAllPlayerPermissions);
         }
 
         TeamLinkEntry withLegacyAccount(@Nullable BankAccount account) {
-            return new TeamLinkEntry(ftbTeamId, lcTeamId, account, protectionLocked, pendingState, landChunks, warTargets, chunkUserPermissions);
+            return new TeamLinkEntry(ftbTeamId, lcTeamId, account, protectionLocked, pendingState, landChunks, warTargets, chunkUserPermissions, chunkAllPlayerPermissions);
         }
 
         TeamLinkEntry withProtectionLocked(boolean locked) {
-            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, locked, pendingState, landChunks, warTargets, chunkUserPermissions);
+            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, locked, pendingState, landChunks, warTargets, chunkUserPermissions, chunkAllPlayerPermissions);
         }
 
         TeamLinkEntry withPendingState(TeamPendingState pending) {
-            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pending, landChunks, warTargets, chunkUserPermissions);
+            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pending, landChunks, warTargets, chunkUserPermissions, chunkAllPlayerPermissions);
         }
 
         TeamLinkEntry withLandChunks(Set<String> chunks) {
-            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pendingState, chunks, warTargets, chunkUserPermissions);
+            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pendingState, chunks, warTargets, chunkUserPermissions, chunkAllPlayerPermissions);
         }
 
         TeamLinkEntry withWarTargets(Set<UUID> targets) {
-            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pendingState, landChunks, targets, chunkUserPermissions);
+            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pendingState, landChunks, targets, chunkUserPermissions, chunkAllPlayerPermissions);
         }
 
         TeamLinkEntry withChunkUserPermissions(Map<String, Map<UUID, Integer>> permissions) {
-            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pendingState, landChunks, warTargets, permissions);
+            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pendingState, landChunks, warTargets, permissions, chunkAllPlayerPermissions);
+        }
+
+        TeamLinkEntry withChunkAllPlayerPermissions(Map<String, Integer> permissions) {
+            return new TeamLinkEntry(ftbTeamId, lcTeamId, legacyAccount, protectionLocked, pendingState, landChunks, warTargets, chunkUserPermissions, permissions);
         }
     }
 }
