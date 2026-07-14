@@ -196,7 +196,7 @@
   "message.lc_claim_economy.war_unavailable": "War is unavailable right now.",
   "message.lc_claim_economy.war_disabled": "War is disabled on this server.",
   "message.lc_claim_economy.seed_test_teams.unavailable": "FTB Teams or FTB Chunks is not loaded.",
-  "message.lc_claim_economy.test_teams.debug_disabled": "Test team commands are disabled. Set debug.debugTestTeamCommands to true in lc_claim_economy-server.toml.",
+  "message.lc_claim_economy.test_teams.debug_disabled": "Test team commands are disabled. Set debug.debugTestTeamCommands to true in charterlands-server.toml.",
   "message.lc_claim_economy.seed_test_teams.done": "Created %1$s test teams (%2$s already existed, %3$s failed). Demo wars: %4$s incoming, %5$s outgoing, %6$s available targets. Reopen the war screen to refresh.",
   "message.lc_claim_economy.clear_test_teams.unavailable": "FTB Teams is not loaded.",
   "message.lc_claim_economy.clear_test_teams.done": "Removed %1$s test teams (%2$s skipped, %3$s failed). Demo wars with your team were cleared. Reopen the war screen to refresh.",

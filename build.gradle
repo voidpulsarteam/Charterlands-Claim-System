@@ -144,24 +144,14 @@ dependencies {
     compileOnly "maven.modrinth:lightmans-currency:${lightmanscurrency_version}"
     localRuntime "maven.modrinth:lightmans-currency:${lightmanscurrency_version}"
 
-    // Open Parties and Claims: no source or tagged releases are published upstream
-    // (see https://github.com/thexaero/open-parties-and-claims), and the exact
-    // curse.maven file ID for this version wasn't confirmed, so it's vendored
-    // locally rather than resolved from a repository.
-    compileOnly files("libs-provided/open-parties-and-claims-neoforge-1.21.1-${opc_version}.jar")
-    localRuntime files("libs-provided/open-parties-and-claims-neoforge-1.21.1-${opc_version}.jar")
-
-    // Client-only test-client mods: Xaero's Minimap + World Map and the
-    // FTB Chunks compat addon that renders FTB Chunks claims on Xaero's maps.
+    // Client-only test-client mods: Xaero's Minimap + World Map.
     // Added to the per-run additional runtime classpath of the client runs only,
     // so they never load on the dedicated server (they are client-side mods).
     clientAdditionalRuntimeClasspath "maven.modrinth:xaeros-minimap:${xaeros_minimap_version}"
     clientAdditionalRuntimeClasspath "maven.modrinth:xaeros-world-map:${xaeros_worldmap_version}"
-    clientAdditionalRuntimeClasspath "curse.maven:ftb-chunks-x-xaeros-compat-${ftb_xaero_compat_project}:${ftb_xaero_compat_file}"
 
     client2AdditionalRuntimeClasspath "maven.modrinth:xaeros-minimap:${xaeros_minimap_version}"
     client2AdditionalRuntimeClasspath "maven.modrinth:xaeros-world-map:${xaeros_worldmap_version}"
-    client2AdditionalRuntimeClasspath "curse.maven:ftb-chunks-x-xaeros-compat-${ftb_xaero_compat_project}:${ftb_xaero_compat_file}"
 }
 
 var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
@@ -177,7 +167,6 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
             ftb_library_version    : ftb_library_version,
             ftb_teams_version      : ftb_teams_version,
             ftb_chunks_version     : ftb_chunks_version,
-            opc_version            : opc_version,
             lightmanscurrency_version: lightmanscurrency_version
     ]
     inputs.properties replaceProperties

@@ -3,6 +3,7 @@ package dev.voidpulsar.lc_claim_economy;
 import com.mojang.logging.LogUtils;
 import dev.voidpulsar.lc_claim_economy.config.LcClaimEconomyConfig;
 import dev.voidpulsar.lc_claim_economy.command.ClearWarsCommand;
+import dev.voidpulsar.lc_claim_economy.command.TownMenuCommand;
 import dev.voidpulsar.lc_claim_economy.command.SeedTestTeamsCommand;
 import dev.voidpulsar.lc_claim_economy.command.UpkeepDetailsCommand;
 import dev.voidpulsar.lc_claim_economy.command.UpkeepPriorityCommand;
@@ -15,16 +16,21 @@ import dev.voidpulsar.lc_claim_economy.network.RequestClaimPricesPayload;
 import dev.voidpulsar.lc_claim_economy.network.RequestChunkUserPermsPayload;
 import dev.voidpulsar.lc_claim_economy.network.RequestLandChunksPayload;
 import dev.voidpulsar.lc_claim_economy.network.RequestPendingStatePayload;
+import dev.voidpulsar.lc_claim_economy.network.RequestTownMenuPayload;
+import dev.voidpulsar.lc_claim_economy.network.OpenTownBankPayload;
 import dev.voidpulsar.lc_claim_economy.network.SyncClaimPricesPayload;
 import dev.voidpulsar.lc_claim_economy.network.SyncChunkUserPermsPayload;
 import dev.voidpulsar.lc_claim_economy.network.SyncLandChunksPayload;
 import dev.voidpulsar.lc_claim_economy.network.SyncPendingStatePayload;
 import dev.voidpulsar.lc_claim_economy.network.RequestWarStatePayload;
+import dev.voidpulsar.lc_claim_economy.network.OpenTownMenuPayload;
 import dev.voidpulsar.lc_claim_economy.network.SetChunkUserPermsPayload;
 import dev.voidpulsar.lc_claim_economy.network.SyncWarStatePayload;
 import dev.voidpulsar.lc_claim_economy.network.ToggleChunkTypeBatchPayload;
 import dev.voidpulsar.lc_claim_economy.network.ToggleChunkTypePayload;
 import dev.voidpulsar.lc_claim_economy.network.ToggleWarPayload;
+import dev.voidpulsar.lc_claim_economy.network.SyncTownMenuPayload;
+import dev.voidpulsar.lc_claim_economy.network.TownMenuActionPayload;
 import dev.voidpulsar.lc_claim_economy.client.ClientPendingRefreshHandler;
 import dev.voidpulsar.lc_claim_economy.service.UpkeepService;
 import dev.voidpulsar.lc_claim_economy.teams.LandProperties;
@@ -44,6 +50,7 @@ import org.slf4j.Logger;
 @Mod(LcClaimEconomy.MOD_ID)
 public class LcClaimEconomy {
     public static final String MOD_ID = "lc_claim_economy";
+        public static final String COMMAND_ROOT = "charterlands";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public LcClaimEconomy(IEventBus modEventBus, ModContainer modContainer) {
@@ -53,7 +60,9 @@ public class LcClaimEconomy {
 
         modEventBus.addListener(this::registerPayloads);
 
-        LandProperties.register();
+                if (dev.voidpulsar.lc_claim_economy.compat.ModCompat.isFtbAvailable()) {
+                        LandProperties.register();
+                }
 
         if (dev.voidpulsar.lc_claim_economy.compat.ModCompat.isFtbAvailable()) {
             NeoForge.EVENT_BUS.register(new UpkeepService());
@@ -71,12 +80,8 @@ public class LcClaimEconomy {
             LOGGER.info("FTB Chunks/Teams not detected - FTB Chunks integration disabled.");
         }
 
-        if (dev.voidpulsar.lc_claim_economy.compat.ModCompat.isOpcAvailable()) {
-            NeoForge.EVENT_BUS.register(new dev.voidpulsar.lc_claim_economy.opc.OpcIntegration());
-            LOGGER.info("Open Parties and Claims detected - OP&C claim economy integration enabled.");
-        }
-
         NeoForge.EVENT_BUS.addListener(ClearWarsCommand::register);
+        NeoForge.EVENT_BUS.addListener(TownMenuCommand::register);
         NeoForge.EVENT_BUS.register(new dev.voidpulsar.lc_claim_economy.handler.CoinMintDisableHandler());
 
         if (FMLEnvironment.dist == Dist.CLIENT && dev.voidpulsar.lc_claim_economy.compat.ModCompat.isFtbAvailable()) {
@@ -107,6 +112,21 @@ public class LcClaimEconomy {
                 SyncWarStatePayload::handleClient
         );
         registrar.playToClient(
+                OpenTownMenuPayload.TYPE,
+                OpenTownMenuPayload.STREAM_CODEC,
+                OpenTownMenuPayload::handleClient
+        );
+        registrar.playToClient(
+                OpenTownBankPayload.TYPE,
+                OpenTownBankPayload.STREAM_CODEC,
+                OpenTownBankPayload::handleClient
+        );
+        registrar.playToClient(
+                SyncTownMenuPayload.TYPE,
+                SyncTownMenuPayload.STREAM_CODEC,
+                SyncTownMenuPayload::handleClient
+        );
+        registrar.playToClient(
                 SyncChunkUserPermsPayload.TYPE,
                 SyncChunkUserPermsPayload.STREAM_CODEC,
                 SyncChunkUserPermsPayload::handleClient
@@ -120,6 +140,11 @@ public class LcClaimEconomy {
                 RequestPendingStatePayload.TYPE,
                 RequestPendingStatePayload.STREAM_CODEC,
                 RequestPendingStatePayload::handleServer
+        );
+        registrar.playToServer(
+                RequestTownMenuPayload.TYPE,
+                RequestTownMenuPayload.STREAM_CODEC,
+                RequestTownMenuPayload::handleServer
         );
         registrar.playToServer(
                 RequestLandChunksPayload.TYPE,
@@ -155,6 +180,11 @@ public class LcClaimEconomy {
                 ToggleWarPayload.TYPE,
                 ToggleWarPayload.STREAM_CODEC,
                 ToggleWarPayload::handleServer
+        );
+        registrar.playToServer(
+                TownMenuActionPayload.TYPE,
+                TownMenuActionPayload.STREAM_CODEC,
+                TownMenuActionPayload::handleServer
         );
     }
 }
