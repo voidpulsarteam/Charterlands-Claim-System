@@ -110,12 +110,6 @@ public final class ChunkUserPermissionService {
             return;
         }
 
-        Optional<UUID> target = resolvePlayerRef(server, playerRef);
-        if (target.isEmpty()) {
-            actor.displayClientMessage(Component.translatable("message.lc_claim_economy.chunk_user_perm_unknown_player", playerRef), false);
-            return;
-        }
-
         String normalizedKey = ChunkPosKey.encode(chunk.getPos());
         int sanitized = ChunkPermissionFlags.sanitize(flags);
 
@@ -135,6 +129,12 @@ public final class ChunkUserPermissionService {
             }
 
             syncToPlayer(actor, normalizedKey);
+            return;
+        }
+
+        Optional<UUID> target = resolvePlayerRef(server, playerRef);
+        if (target.isEmpty()) {
+            actor.displayClientMessage(Component.translatable("message.lc_claim_economy.chunk_user_perm_unknown_player", playerRef), false);
             return;
         }
 
