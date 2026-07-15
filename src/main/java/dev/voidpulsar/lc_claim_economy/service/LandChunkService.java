@@ -150,7 +150,7 @@ public final class LandChunkService {
             return null;
         }
 
-        ChunkDimPos pos = ChunkPosKey.toChunkDimPos(chunkKey);
+        ChunkDimPos pos = new ChunkDimPos(ChunkPosKey.toDimensionKey(chunkKey), ChunkPosKey.x(chunkKey), ChunkPosKey.z(chunkKey));
         ClaimedChunk chunk = FTBChunksAPI.api().getManager().getChunk(pos);
         if (chunk == null
                 || chunk.getTeamData().getTeam() == null

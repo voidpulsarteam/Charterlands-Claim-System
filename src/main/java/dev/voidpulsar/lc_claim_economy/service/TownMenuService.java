@@ -29,6 +29,8 @@ public final class TownMenuService {
                 if (!name.isEmpty() && registry.townForPlayer(player.getUUID()).isEmpty()) {
                     TownService.createTown(player.server, name, player.getUUID());
                     changed = true;
+                    TownMenuSyncService.syncToPlayer(player);
+                    player.displayClientMessage(Component.literal("Town created: " + name), false);
                 }
             }
             case INVITE_PLAYER -> {
@@ -47,6 +49,14 @@ public final class TownMenuService {
             case DECLINE_INVITE -> {
                 if (townId != null && registry.hasInvitation(townId, player.getUUID())) {
                     changed = registry.declineInvitation(townId, player.getUUID());
+                }
+            }
+            case DISBAND_TOWN -> {
+                if (townId != null && registry.town(townId) != null && registry.rankOf(townId, player.getUUID()).canDisbandTown()) {
+                    changed = registry.deleteTown(townId);
+                    if (changed) {
+                        player.displayClientMessage(Component.literal("Town disbanded."), false);
+                    }
                 }
             }
             case DEPOSIT_TREASURY -> {

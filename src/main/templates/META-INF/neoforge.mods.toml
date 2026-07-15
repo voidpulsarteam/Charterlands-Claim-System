@@ -7,7 +7,7 @@ modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
 authors="malik"
-description='''Connects Lightman's Currency with Charterlands' native town system and the remaining legacy FTB claim hooks.'''
+description='''Connects Lightman's Currency with Charterlands' native town and claim systems, with optional compatibility hooks for legacy FTB-based worlds.'''
 
 [[dependencies.${mod_id}]]
 modId="neoforge"

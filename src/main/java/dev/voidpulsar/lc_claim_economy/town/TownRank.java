@@ -10,6 +10,10 @@ public enum TownRank {
         return this == MAYOR || this == ASSISTANT;
     }
 
+    public boolean canDisbandTown() {
+        return this == MAYOR;
+    }
+
     public boolean canDepositTreasury() {
         return this == MAYOR || this == ASSISTANT || this == RESIDENT;
     }

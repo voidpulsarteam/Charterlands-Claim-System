@@ -3,6 +3,7 @@ package dev.voidpulsar.lc_claim_economy.mixin;
 import dev.ftb.mods.ftbchunks.api.ClaimedChunk;
 import dev.ftb.mods.ftbchunks.api.Protection;
 import dev.ftb.mods.ftblibrary.math.ChunkDimPos;
+import dev.voidpulsar.lc_claim_economy.service.ChunkPermissionFlags;
 import dev.voidpulsar.lc_claim_economy.service.ChunkUserPermissionService;
 import dev.voidpulsar.lc_claim_economy.service.LandChunkService;
 import dev.voidpulsar.lc_claim_economy.service.LandProtectionContext;
@@ -38,7 +39,12 @@ public abstract class ClaimedChunkManagerProtectionMixin {
                     .getChunk(new ChunkDimPos(player.level(), pos));
             LandProtectionContext.set(chunk != null && LandChunkService.isLandChunk(chunk));
             if (TownService.ownerOf(player.server, chunkKey) != null) {
-                boolean allowed = TownService.canInteract(player.server, player, chunkKey, protection);
+                boolean allowed = TownService.canInteract(
+                    player.server,
+                    player,
+                    chunkKey,
+                    ChunkPermissionFlags.fromProtection(protection)
+                );
                 LandProtectionContext.clear();
                 cir.setReturnValue(!allowed);
                 return;

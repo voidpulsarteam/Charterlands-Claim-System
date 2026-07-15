@@ -1,6 +1,8 @@
 package dev.voidpulsar.lc_claim_economy.mixin.client;
 
 import net.minecraft.client.Minecraft;
+import dev.voidpulsar.lc_claim_economy.client.gui.ClaimMapScreen;
+import dev.voidpulsar.lc_claim_economy.client.ClaimMapClientHandlers;
 import dev.voidpulsar.lc_claim_economy.client.gui.TownMenuScreen;
 import dev.voidpulsar.lc_claim_economy.network.RequestTownMenuPayload;
 import net.minecraft.client.gui.components.Button;
@@ -31,6 +33,9 @@ public abstract class InventoryScreenTownButtonMixin {
     @Inject(method = "init", at = @At("TAIL"))
     private void lcClaimEconomy$addTownButton(CallbackInfo ci) {
         InventoryScreen screen = (InventoryScreen) (Object) this;
+        addRenderableWidget(Button.builder(Component.literal("Map"), button -> ClaimMapClientHandlers.openClaimMapScreen())
+                .bounds(leftPos + imageWidth - 100, topPos + 4, 48, 20)
+                .build());
         addRenderableWidget(Button.builder(Component.literal("Town"), button -> {
             Minecraft.getInstance().setScreen(new TownMenuScreen());
             PacketDistributor.sendToServer(new RequestTownMenuPayload());

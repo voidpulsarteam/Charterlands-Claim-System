@@ -7,7 +7,7 @@ modId="lc_claim_economy"
 version="3.8.0"
 displayName="Charterlands"
 authors="malik"
-description='''Connects Lightman's Currency with Charterlands' native town system and the remaining legacy FTB claim hooks.'''
+description='''Connects Lightman's Currency with Charterlands' native town and claim systems, with optional compatibility hooks for legacy FTB-based worlds.'''
 
 [[dependencies.lc_claim_economy]]
 modId="neoforge"

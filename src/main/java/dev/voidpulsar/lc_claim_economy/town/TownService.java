@@ -1,8 +1,6 @@
 package dev.voidpulsar.lc_claim_economy.town;
 
-import dev.ftb.mods.ftbchunks.api.Protection;
 import dev.voidpulsar.lc_claim_economy.data.ChunkPosKey;
-import dev.voidpulsar.lc_claim_economy.service.ChunkPermissionFlags;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -44,12 +42,12 @@ public final class TownService {
         return registry(server).rankOf(townId, playerId);
     }
 
-    public static boolean canInteract(MinecraftServer server, ServerPlayer player, String chunkKey, Protection protection) {
+    public static boolean canInteract(MinecraftServer server, ServerPlayer player, String chunkKey, int permissionFlags) {
         UUID townId = ownerOf(server, chunkKey);
         if (townId == null) {
             return false;
         }
-        return registry(server).canInteract(townId, chunkKey, player.getUUID(), ChunkPermissionFlags.fromProtection(protection));
+        return registry(server).canInteract(townId, chunkKey, player.getUUID(), permissionFlags);
     }
 
     public static void setRank(MinecraftServer server, UUID townId, UUID playerId, TownRank rank) {

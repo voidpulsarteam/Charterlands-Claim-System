@@ -16,6 +16,7 @@ public record TownMenuActionPayload(Action action, UUID townId, String text, Str
         INVITE_PLAYER,
         ACCEPT_INVITE,
         DECLINE_INVITE,
+        DISBAND_TOWN,
         DEPOSIT_TREASURY,
         WITHDRAW_TREASURY,
         TRUST_CURRENT_PLOT,

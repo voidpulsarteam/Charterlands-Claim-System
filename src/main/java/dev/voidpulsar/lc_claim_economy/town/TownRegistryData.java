@@ -269,6 +269,10 @@ public final class TownRegistryData extends SavedData {
 
     public Optional<UUID> townForPlayer(UUID playerId) {
         for (Map.Entry<UUID, Map<UUID, TownRank>> entry : registry.membershipsView().entrySet()) {
+            // Ignore stale membership rows that point to deleted towns.
+            if (!registry.townsView().containsKey(entry.getKey())) {
+                continue;
+            }
             if (entry.getValue().containsKey(playerId)) {
                 return Optional.of(entry.getKey());
             }

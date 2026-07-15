@@ -2,7 +2,6 @@ package dev.voidpulsar.lc_claim_economy.network;
 
 import dev.voidpulsar.lc_claim_economy.LcClaimEconomy;
 import dev.voidpulsar.lc_claim_economy.client.ClientPendingState;
-import dev.voidpulsar.lc_claim_economy.client.PendingStateUiRefresh;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -68,8 +67,6 @@ public record SyncPendingStatePayload(
                     payload.pendingLandChunks,
                     payload.pendingBuildChunks
             );
-            PendingStateUiRefresh.syncSelfTeamOpenScreen();
-            PendingStateUiRefresh.refreshOpenScreens();
         });
     }
 }

@@ -51,6 +51,8 @@ public final class TownMenuScreen extends Screen {
 
     @Override
     protected void init() {
+        PacketDistributor.sendToServer(new RequestTownMenuPayload());
+
         addSidebarButton(Section.OVERVIEW, 36, "gui.lc_claim_economy.town_menu.section_overview");
         addSidebarButton(Section.TOWNS, 60, "gui.lc_claim_economy.town_menu.section_towns");
         addSidebarButton(Section.RESIDENTS, 84, "gui.lc_claim_economy.town_menu.section_residents");
@@ -95,13 +97,6 @@ public final class TownMenuScreen extends Screen {
                     .build());
         }
 
-        townNameBox = new EditBox(font, CONTENT_LEFT, 102, Math.max(180, headerWidth - 92), 20, Component.empty());
-        townNameBox.setMaxLength(32);
-        townNameBox.setHint(Component.translatable("gui.lc_claim_economy.town_menu.create_hint"));
-        addRenderableWidget(townNameBox);
-        addRenderableWidget(Button.builder(Component.translatable("gui.lc_claim_economy.town_menu.create"), button -> createTown())
-                .bounds(width - PAD - 96, 102, 96, 20).build());
-
         if (currentTown != null) {
             addRenderableWidget(Button.builder(Component.translatable("gui.lc_claim_economy.town_menu.open_bank"), button -> minecraft.setScreen(new TownMenuScreen(Section.BANK)))
                     .bounds(CONTENT_LEFT, 130, 96, 20)
@@ -112,6 +107,18 @@ public final class TownMenuScreen extends Screen {
             addRenderableWidget(Button.builder(Component.translatable("gui.lc_claim_economy.town_menu.section_towns"), button -> minecraft.setScreen(new TownMenuScreen(Section.TOWNS)))
                     .bounds(CONTENT_LEFT + 220, 130, 96, 20)
                     .build());
+
+            if (currentTown.playerTown()) {
+            addRenderableWidget(Button.builder(Component.translatable("gui.lc_claim_economy.town_menu.disband"), button -> PacketDistributor.sendToServer(new TownMenuActionPayload(
+                TownMenuActionPayload.Action.DISBAND_TOWN,
+                TownMenuState.playerTownId(),
+                "",
+                "",
+                ""
+            )))
+                .bounds(CONTENT_LEFT, 158, 96, 20)
+                .build());
+            }
         }
     }
 
